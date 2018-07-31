@@ -15,8 +15,21 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Auth::routes();
+Route::get('login', 'Auth\LoginController@showLoginForm')->name('login');
 
-Route::get('activate/{token}', 'Auth\RegisterController@activate')->name('activate');
+Route::post('login/attempt', 'Auth\LoginController@attempt')->name('login.attempt');
+
+Route::get('login/{token}/validate', 'Auth\LoginController@login')
+    ->name('login.token.validate')
+    ->middleware('signed');
+
+Route::post('logout', 'Auth\LoginController@logout')->name('logout');
+
+Route::get('register', 'Auth\RegisterController@showRegistrationForm')->name('register');
+Route::post('register', 'Auth\RegisterController@register');
+
+Route::get('user/activate/{token}', 'Auth\RegisterController@activate')
+    ->name('user.activate')
+    ->middleware('signed');
 
 Route::get('/home', 'HomeController@index')->name('home');

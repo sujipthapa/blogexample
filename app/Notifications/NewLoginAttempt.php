@@ -7,19 +7,18 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
 
-class UserActivate extends Notification
+class NewLoginAttempt extends Notification
 {
     use Queueable;
 
     /**
      * Create a new notification instance.
      *
-     * @param $user
      * @return void
      */
-    public function __construct($user)
+    public function __construct($attempt)
     {
-        $this->user = $user;
+        $this->attempt = $attempt;
     }
 
     /**
@@ -43,10 +42,10 @@ class UserActivate extends Notification
     {
         return with(new MailMessage)
             ->from(env('ADMIN_MAIL_ADDRESS'))
-            ->subject('Activate Account!')
-            ->greeting(sprintf('Hi, %s', $this->user->name))
-            ->line('We just noticed that you created a new account. You will need to activate your account to sign in into this account.')
-            ->action('Activate', URL::signedRoute('user.activate', [$this->user->token]))
+            ->subject('Login Your Account')
+            ->greeting('Hello !')
+            ->line('Please click the button below to get access to the application, which will be valid only for 15 minutes.')
+            ->action('Login to your account', URL::temporarySignedRoute('login.token.validate', now()->addMinutes(15), [$this->attempt->token]))
             ->line('Thank you for using our application!');
     }
 

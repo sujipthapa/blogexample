@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Notifications\UserActivate;
 use App\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Foundation\Auth\RegistersUsers;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class RegisterController extends Controller
@@ -51,9 +52,7 @@ class RegisterController extends Controller
     {
         return Validator::make($data, [
             'name' => 'required|string|max:255',
-            'username' => 'required|string|max:20|unique:users',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
         ]);
     }
 
@@ -67,9 +66,7 @@ class RegisterController extends Controller
     {
         $user = User::create([
             'name' => $data['name'],
-            'username' => $data['username'],
             'email' => $data['email'],
-            'password' => Hash::make($data['password']),
             'token' => str_random(40) . time(),
         ]);
 
@@ -79,9 +76,25 @@ class RegisterController extends Controller
     }
 
     /**
+     * Handle a registration request for the application.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function register(Request $request)
+    {
+        $this->validator($request->all())->validate();
+
+        event(new Registered($user = $this->create($request->all())));
+
+        return redirect()->route('login')
+            ->with(['success' => 'Congratulations! your account is registered, you will shortly receive an email to activate your account.']);
+    }
+
+    /**
      * @param $token
      */
-    public function activate($token = null)
+    public function activate($token)
     {
         $user = User::where('token', $token)->first();
 
@@ -90,12 +103,12 @@ class RegisterController extends Controller
                 ->with(['error' => 'Your activation code is either expired or invalid.']);
         }
 
-        $user->token = '';
-        $user->active = User::ACTIVE;
-
-        $user->save();
+        $user->update([
+            'token' => '',
+            'active' => User::ACTIVE,
+        ]);
 
         return redirect()->route('login')
-            ->with(['status' => 'Congratulations! your account is now activated.']);
+            ->with(['success' => 'Congratulations! your account is now activated.']);
     }
 }
